@@ -1,0 +1,2 @@
+﻿/* local tweaks only; Tailwind is loaded via CDN */
+html, body, #root { height: 100%; }
