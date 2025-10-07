@@ -128,7 +128,7 @@ function AuthPanel({ onAuthed }) {
 }
 
 /* -------------------------------------------------------
-   Product Card (Split-aware)
+   Product Card
 ------------------------------------------------------- */
 function ProductCard({ p, onAdd }) {
   const [portion, setPortion] = useState("full");
@@ -183,7 +183,7 @@ function ProductCard({ p, onAdd }) {
 }
 
 /* -------------------------------------------------------
-   Cart
+   Cart Component
 ------------------------------------------------------- */
 function Cart({ items, setItems, onCheckout }) {
   const total = items.reduce(
@@ -255,7 +255,7 @@ function Cart({ items, setItems, onCheckout }) {
 }
 
 /* -------------------------------------------------------
-   Orders (simple history)
+   Orders + Success Screen
 ------------------------------------------------------- */
 function OrdersPanel({ username }) {
   const [orders, setOrders] = useState([]);
@@ -304,9 +304,6 @@ function OrdersPanel({ username }) {
   );
 }
 
-/* -------------------------------------------------------
-   Order Success Screen
-------------------------------------------------------- */
 function OrderSuccess({ order, onBackToStore, onViewOrders }) {
   if (!order) return null;
   return (
@@ -341,40 +338,36 @@ function OrderSuccess({ order, onBackToStore, onViewOrders }) {
 }
 
 /* -------------------------------------------------------
-   Main App (with mobile bottom nav + cart overlay)
+   Main App (Cart now full-page on mobile)
 ------------------------------------------------------- */
 export default function App() {
-  // session
   const [session, setSession] = useState(() => JSON.parse(localStorage.getItem("session") || "null"));
   const username = session?.username || null;
 
-  // app state
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [activeTab, setActiveTab] = useState("store"); // store | cart | orders | account | success
+  const [activeTab, setActiveTab] = useState("store");
   const [cartItems, setCartItems] = useState([]);
   const [lastOrder, setLastOrder] = useState(null);
 
-  // normalize products using ProductCode + Description / SgrpName
+  // Normalize products
   const NORMALIZED_PRODUCTS = useMemo(
     () =>
       PRODUCTS.map((p, i) => ({
         ...p,
-        id: p.ProductCode || `product-${i}`,                   // unique ID
+        id: p.ProductCode || `product-${i}`,
         name: p.Description || p.name || "Unnamed",
-        category: p.category || p.SgrpName || "",              // allow either key
-        price: typeof p.Price1 === "number" ? p.Price1 : Number((p.Price1 || p.price || 0)),
+        category: p.category || p.SgrpName || "",
+        price: typeof p.Price1 === "number" ? p.Price1 : Number(p.Price1 || p.price || 0),
       })),
     []
   );
 
-  // derived categories (mobile chips)
   const CATEGORIES = useMemo(() => {
     const set = new Set(NORMALIZED_PRODUCTS.map((p) => (p.category || "").trim()).filter(Boolean));
     return ["All", ...Array.from(set).sort()];
   }, [NORMALIZED_PRODUCTS]);
 
-  // filtered products
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     return NORMALIZED_PRODUCTS.filter((p) => {
@@ -385,13 +378,11 @@ export default function App() {
         (p.name || "").toLowerCase().includes(q) ||
         cat.toLowerCase().includes(q) ||
         (p.pack || "").toLowerCase().includes(q) ||
-        (p.size || "").toLowerCase().includes(q) ||
-        (p.id || "").toLowerCase().includes(q);
+        (p.size || "").toLowerCase().includes(q);
       return catOk && qOk;
     });
   }, [query, activeCategory, NORMALIZED_PRODUCTS]);
 
-  // cart ops
   const addToCart = (product, portion = "full", isSplit = false) =>
     setCartItems((prev) => {
       const key = `${product.id}__${portion}`;
@@ -401,16 +392,7 @@ export default function App() {
         copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
         return copy;
       }
-      return [
-        ...prev,
-        {
-          ...product,
-          portion,
-          qty: 1,
-          isSplit,
-          basePrice: product.price,
-        },
-      ];
+      return [...prev, { ...product, portion, qty: 1, isSplit, basePrice: product.price }];
     });
 
   const placeOrder = () => {
@@ -426,20 +408,18 @@ export default function App() {
       total,
     };
     const key = "orders_" + username;
-      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
     localStorage.setItem(key, JSON.stringify([order, ...existing]));
     setCartItems([]);
     setLastOrder(order);
     setActiveTab("success");
   };
 
-  // logout
   const logout = () => {
     localStorage.removeItem("session");
     setSession(null);
   };
 
-  // unauthenticated
   if (!username) {
     return (
       <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-4 py-10">
@@ -448,7 +428,9 @@ export default function App() {
     );
   }
 
-  // views
+  /* ------------------------------
+     Page Views
+  ------------------------------ */
   const StoreView = (
     <section className="md:col-span-2">
       <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -476,9 +458,6 @@ export default function App() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <ChevronRight className="h-3 w-3" /> Tip: tap “Add” to send items to your cart. Split options appear on eligible items.
-        </div>
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -489,10 +468,21 @@ export default function App() {
     </section>
   );
 
-  const CartSidebar = (
-    <aside className="md:col-span-1 hidden md:block">
-      <Cart items={cartItems} setItems={setCartItems} onCheckout={placeOrder} />
-    </aside>
+  const CartView = (
+    <section className="md:col-span-2">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <ShoppingCart className="h-5 w-5 text-indigo-600" />
+          Your Cart
+        </h2>
+        <Button variant="ghost" onClick={() => setActiveTab("store")}>
+          ← Continue shopping
+        </Button>
+      </div>
+      <div className="mx-auto max-w-lg">
+        <Cart items={cartItems} setItems={setCartItems} onCheckout={placeOrder} />
+      </div>
+    </section>
   );
 
   const OrdersView = (
@@ -528,54 +518,48 @@ export default function App() {
     </section>
   );
 
-  // mobile cart overlay (full screen)
-  const MobileCartOverlay = (
-    <div className={`fixed inset-0 z-50 md:hidden ${activeTab === "cart" ? "" : "pointer-events-none"}`}>
-      <div
-        className={`absolute inset-0 bg-black/30 transition-opacity ${activeTab === "cart" ? "opacity-100" : "opacity-0"}`}
-        onClick={() => setActiveTab("store")}
-      />
-      <div
-        className={`absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border border-zinc-200 bg-white p-4 shadow-2xl transition-transform ${
-          activeTab === "cart" ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="mx-auto max-w-lg">
-          <Cart items={cartItems} setItems={setCartItems} onCheckout={() => { setActiveTab("store"); placeOrder(); }} />
-        </div>
-      </div>
-    </div>
+  const CartSidebar = (
+    <aside className="md:col-span-1 hidden md:block">
+      <Cart items={cartItems} setItems={setCartItems} onCheckout={placeOrder} />
+    </aside>
   );
 
-  // mobile bottom nav
   const cartQty = cartItems.reduce((s, it) => s + it.qty, 0);
   const BottomNav = (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur md:hidden">
       <div className="mx-auto grid max-w-3xl grid-cols-4 px-2 py-2">
         <button
           onClick={() => setActiveTab("store")}
-          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "store" ? "text-indigo-600" : "text-zinc-700"}`}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${
+            activeTab === "store" ? "text-indigo-600" : "text-zinc-700"
+          }`}
         >
           <ShoppingCart className="h-5 w-5" />
           Store
         </button>
         <button
           onClick={() => setActiveTab("orders")}
-          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "orders" ? "text-indigo-600" : "text-zinc-700"}`}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${
+            activeTab === "orders" ? "text-indigo-600" : "text-zinc-700"
+          }`}
         >
           <History className="h-5 w-5" />
           Orders
         </button>
         <button
           onClick={() => setActiveTab("account")}
-          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "account" ? "text-indigo-600" : "text-zinc-700"}`}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${
+            activeTab === "account" ? "text-indigo-600" : "text-zinc-700"
+          }`}
         >
           <User className="h-5 w-5" />
           Account
         </button>
         <button
           onClick={() => setActiveTab("cart")}
-          className={`relative flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "cart" ? "text-indigo-600" : "text-zinc-700"}`}
+          className={`relative flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${
+            activeTab === "cart" ? "text-indigo-600" : "text-zinc-700"
+          }`}
         >
           <PackageCheck className="h-5 w-5" />
           Cart
@@ -591,7 +575,6 @@ export default function App() {
 
   return (
     <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 pb-16 md:pb-0">
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -604,19 +587,17 @@ export default function App() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-3">
         {activeTab === "store" && StoreView}
+        {activeTab === "cart" && CartView}
         {activeTab === "orders" && OrdersView}
         {activeTab === "account" && AccountView}
         {activeTab === "success" && SuccessView}
-        {/* Desktop cart sidebar */}
-        {activeTab !== "success" && CartSidebar}
+        {activeTab !== "success" && activeTab !== "cart" && CartSidebar}
       </main>
 
-      {/* Mobile cart overlay & bottom nav */}
-      {MobileCartOverlay}
       {BottomNav}
     </div>
   );
 }
+
