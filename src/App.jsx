@@ -15,31 +15,14 @@ import {
  * - Desktop: right cart panel; Mobile: bottom cart drawer
  */
 
-// ---------- Mock Data ----------
-const PRODUCTS = [
-  { id: "p01", name: "Beef Burger Patties 4oz (48)", pack: "Box of 48", price: 28.99, category: "Frozen", desc: "Premium 4oz beef patties, IQF frozen." },
-  { id: "p02", name: "Chicken Fillets Breaded (2kg)", pack: "Bag 2kg", price: 16.90, category: "Frozen", desc: "Crispy coated whole-muscle chicken fillets." },
-  { id: "p03", name: "Skin-on Fries 10mm (10kg)", pack: "Case 10kg", price: 14.50, category: "Frozen", desc: "Catering-grade fries, oven or fryer." },
-  { id: "p04", name: "Onion Rings (1kg)", pack: "Bag 1kg", price: 5.90, category: "Frozen", desc: "Beer-battered onion rings, frozen." },
-  { id: "p05", name: "Brioche Burger Buns 4.5\" (48)", pack: "Box of 48", price: 18.40, category: "Bakery", desc: "Soft glazed brioche buns for burgers." },
-  { id: "p06", name: "Gluten‑Free Buns 4\" (24)", pack: "Box of 24", price: 16.20, category: "Bakery", desc: "Individually wrapped GF buns." },
-  { id: "p07", name: "American Cheese Slices (112)", pack: "Pack of 112", price: 9.80, category: "Chilled", desc: "Burger cheese slices, easy-peel." },
-  { id: "p08", name: "Smoky BBQ Sauce 2.5kg", pack: "Tub 2.5kg", price: 6.90, category: "Ambient", desc: "Rich BBQ sauce for dipping / glazing." },
-  { id: "p09", name: "Ketchup 4.5kg", pack: "Jerrycan 4.5kg", price: 7.80, category: "Ambient", desc: "Thick tomato ketchup, catering pack." },
-  { id: "p10", name: "Mayonnaise 10L", pack: "Bucket 10L", price: 18.90, category: "Ambient", desc: "Catering mayo, creamy and stable." },
-  { id: "p11", name: "Pickled Gherkin Slices 3kg", pack: "Jar 3kg", price: 7.50, category: "Ambient", desc: "Crinkle-cut burger pickles." },
-  { id: "p12", name: "Vegetable Cooking Oil 20L", pack: "Jerrycan 20L", price: 28.50, category: "Ambient", desc: "High-heat frying oil." },
-  { id: "p13", name: "Still Water 500ml (24)", pack: "Case of 24", price: 6.99, category: "Drinks", desc: "Spring water bottles." },
-  { id: "p14", name: "Cola 330ml (24)", pack: "Case of 24", price: 12.90, category: "Drinks", desc: "Carbonated soft drink." },
-  { id: "p15", name: "Milkshake Mix Vanilla 1L (8)", pack: "Case of 8", price: 14.40, category: "Chilled", desc: "Blend-ready shake base." },
-  { id: "p16", name: "Plain Flour 16kg", pack: "Sack 16kg", price: 10.50, category: "Ambient", desc: "Versatile baking flour." },
-  { id: "p17", name: "Granulated Sugar 25kg", pack: "Sack 25kg", price: 21.00, category: "Ambient", desc: "Catering sugar." },
-  { id: "p18", name: "Toilet Rolls 3‑ply (40)", pack: "Bulk 40", price: 15.90, category: "Janitorial", desc: "Soft sheets, value pack." },
-  { id: "p19", name: "Bleach 5L", pack: "5L", price: 3.90, category: "Janitorial", desc: "Thick bleach for hygiene." },
-  { id: "p20", name: "Washing‑up Liquid 5L", pack: "5L", price: 5.40, category: "Janitorial", desc: "Lemon washing-up liquid." },
-];
+import { PRODUCTS } from "./data/PRODUCTS.generated";
 
-const ALL_CATEGORIES = ["Frozen", "Bakery", "Chilled", "Ambient", "Drinks", "Janitorial"];
+const ALL_CATEGORIES = ["All","Fruit","Vegetables","Salads","Herbs","Exotics"];
+// when filtering:
+const filtered = PRODUCTS.filter(p =>
+  (activeCategory === "All" || p.category === activeCategory) &&
+  matchesSearch(p, query)
+);
 
 // ---------- Storage Helpers ----------
 const LS_USERS = "ws_users_v1";
