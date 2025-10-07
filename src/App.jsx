@@ -30,31 +30,62 @@ function Pill({ children, className = "" }) {
 }
 
 // ---------- Store Card ----------
-function ProductCard({ product, onAdd }) {
+function ProductCard({ p, onAdd }) {
+  const [portion, setPortion] = useState("full");
+  const effectivePrice = (p.price || 0) * portionFactor(portion);
+
+  // 👇 Force split flag into boolean correctly
+  const isSplit = String(p.split).toLowerCase() === "true" || String(p.split).toLowerCase() === "y";
+
   return (
-    <div className="flex flex-col justify-between rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-      <div>
-        <h3 className="font-semibold text-gray-800 leading-tight">{product.name}</h3>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-          {product.pack && <Pill>{product.pack}</Pill>}
-          {product.size && <Pill>{product.size}</Pill>}
-          <Pill>{product.category}</Pill>
+    <div className="group grid rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold leading-tight">{p.name}</h3>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
+            {p.size && <Pill>{p.size}</Pill>}
+            {p.pack && <Pill>{p.pack}</Pill>}
+            <Pill>{p.category}</Pill>
+            {isSplit && <Pill>Split available</Pill>}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="rounded-xl bg-zinc-100 px-2 py-1 text-sm font-semibold">
+            £{effectivePrice.toFixed(2)}
+          </div>
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="text-sm text-gray-500">ID: {product.id}</div>
-        <div className="flex items-center gap-2">
-          <div className="rounded-xl bg-gray-100 px-2 py-1 text-sm font-semibold">
-            £{product.price.toFixed(2)}
-          </div>
-          <Button onClick={() => onAdd(product)} className="flex items-center gap-1">
-            <Plus className="h-4 w-4" /> Add
-          </Button>
+
+      {isSplit && (
+        <div className="mt-3">
+          <label className="text-xs text-zinc-600">Select portion</label>
+          <select
+            value={portion}
+            onChange={(e) => setPortion(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+          >
+            {portionOptions.map((opt) => (
+              <option value={opt.key} key={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
+      )}
+
+      <div className="mt-3 flex items-center justify-between">
+        <div className="text-xs text-zinc-500">ID: {p.id}</div>
+        <Button
+          onClick={() => onAdd(p, portion)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" /> Add
+        </Button>
       </div>
     </div>
   );
 }
+
 
 // ---------- Cart ----------
 function Cart({ items, setItems, onCheckout }) {
@@ -178,24 +209,35 @@ export default function App() {
     return list;
   }, [query, activeCat]);
 
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const found = prev.find((x) => x.id === product.id);
-      if (found)
-        return prev.map((x) =>
-          x.id === product.id ? { ...x, qty: x.qty + 1 } : x
-        );
-      return [
-        ...prev,
-        {
-          ...product,
-          qty: 1,
-          basePrice: product.price,
-          splitValue: "full",
-        },
-      ];
-    });
-  };
+  const addToCart = (product, portion = "full") =>
+  setCartItems((prev) => {
+    // create a unique key using id + portion
+    const key = `${product.id}-${portion}`;
+    const idx = prev.findIndex((x) => `${x.id}-${x.portion}` === key);
+
+    if (idx >= 0) {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
+      return copy;
+    }
+
+    return [
+      ...prev,
+      {
+        ...product,
+        portion,
+        qty: 1,
+        // store base price for split recalculation
+        basePrice: product.price,
+        price:
+          portion === "half"
+            ? product.price / 2
+            : portion === "quarter"
+            ? product.price / 4
+            : product.price,
+      },
+    ];
+  });
 
   const checkout = () => {
     alert("Checkout complete (demo only).");
