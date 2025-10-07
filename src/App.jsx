@@ -216,25 +216,29 @@ function Cart({ items, setItems, onCheckout }) {
           {items.map((it, idx) => {
             const line = (it.basePrice || it.price) * portionFactor(it.portion) * it.qty;
             return (
-              <div
-                key={`${it.id}__${it.portion}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 p-3"
-              >
-                <div className="min-w-0">
+                  <div
+                 key={`${it.id}__${it.portion}`}
+                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-zinc-100 p-3"
+                 >
+                 <div className="min-w-0 max-w-full">
                   <div className="font-medium truncate">{it.name}</div>
                   <div className="text-xs text-zinc-500">
                     {it.pack ? `${it.pack} • ` : ""}{portionLabel(it.portion)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Button variant="flat" onClick={() => updateQty(idx, -1)}><Minus className="h-4 w-4" /></Button>
                   <div className="w-8 text-center font-semibold">{it.qty}</div>
                   <Button variant="flat" onClick={() => updateQty(idx, +1)}><Plus className="h-4 w-4" /></Button>
                 </div>
 
-                <div className="w-24 text-right font-semibold">£{line.toFixed(2)}</div>
-                <Button variant="ghost" onClick={() => removeItem(idx)}><Trash2 className="h-4 w-4" /></Button>
+                +   <div className="flex items-center justify-end gap-2 sm:ml-2">
+            <div className="w-24 text-right font-semibold shrink-0">£{line.toFixed(2)}</div>
+            <Button variant="ghost" onClick={() => removeItem(idx)} className="shrink-0">
+            <Trash2 className="h-4 w-4" />
+            </Button>
+             </div>
               </div>
             );
           })}
@@ -470,12 +474,12 @@ export default function App() {
 
   const CartView = (
     <section className="md:col-span-2">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm mb-4 flex items-center justify-between">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm mb-4 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-indigo-600" />
           Your Cart
         </h2>
-        <Button variant="ghost" onClick={() => setActiveTab("store")}>
+        <Button variant="ghost" className="shrink-0" onClick={() => setActiveTab("store")}>
           ← Continue shopping
         </Button>
       </div>
@@ -574,7 +578,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 pb-16 md:pb-0">
+    <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 pb-16 md:pb-0 overflow-x-hidden">
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
