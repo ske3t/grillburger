@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from "react";
 import {
-  ShoppingCart, LogOut, Plus, Minus, Trash2, CheckCircle2,
-  Search, User, Lock
+  LogOut, Plus, Minus, Trash2, CheckCircle2, Search, User, Lock,
 } from "lucide-react";
-import { PRODUCTS } from "./data/PRODUCTS.generated";
-import logo from "./assets/logo.jpg"; // ← make sure filename/path matches your asset
+import { PRODUCTS } from "./data/PRODUCTS.generated.js";
+import logo from "./assets/logo.jpg";
 
 // ---------- UI helpers ----------
 const portionOptions = [
@@ -115,25 +114,20 @@ function AuthPanel({ onAuthed }) {
             />
           </div>
         </label>
-        {error && (
-          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>
-        )}
+        {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <Button type="submit" className="w-full">
           {mode === "login" ? "Log in" : "Create account"}
         </Button>
       </form>
-      <p className="text-center text-xs text-zinc-500">
-        Demo only • Data stored in your browser
-      </p>
+      <p className="text-center text-xs text-zinc-500">Demo only • Data stored in your browser</p>
     </div>
   );
 }
 
-// ---------- Product Card (split-aware) ----------
+// ---------- Product Card ----------
 function ProductCard({ p, onAdd }) {
   const [portion, setPortion] = useState("full");
 
-  // Robust split detection for true/"true"/"y"/"yes"
   const isSplit =
     String(p.split).toLowerCase() === "true" ||
     String(p.split).toLowerCase() === "y" ||
@@ -145,7 +139,6 @@ function ProductCard({ p, onAdd }) {
     <div className="group grid rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {/* name = Description from CSV (already mapped in your data file) */}
           <h3 className="font-semibold leading-tight">{p.name}</h3>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
             {p.size && <Pill>{p.size}</Pill>}
@@ -204,27 +197,7 @@ function Cart({ items, setItems, onCheckout }) {
       return copy;
     });
 
-  // Allow changing portion inside the cart too
-  const updatePortion = (idx, newPortion) =>
-    setItems((prev) => {
-      const copy = [...prev];
-      const current = copy[idx];
-      const newKey = `${current.id}__${newPortion}`;
-      // If another line already has same (id+portion), merge qty
-      const mergeIdx = copy.findIndex(
-        (x, i) => i !== idx && `${x.id}__${x.portion}` === newKey
-      );
-      if (mergeIdx >= 0) {
-        copy[mergeIdx] = { ...copy[mergeIdx], qty: copy[mergeIdx].qty + current.qty };
-        copy.splice(idx, 1);
-      } else {
-        copy[idx] = { ...current, portion: newPortion };
-      }
-      return copy;
-    });
-
-  const removeItem = (idx) =>
-    setItems((prev) => prev.filter((_, i) => i !== idx));
+  const removeItem = (idx) => setItems((prev) => prev.filter((_, i) => i !== idx));
 
   return (
     <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -254,21 +227,6 @@ function Cart({ items, setItems, onCheckout }) {
                   <div className="w-24 text-right font-semibold">£{line.toFixed(2)}</div>
                 </div>
 
-                {it.isSplit && (
-                  <div>
-                    <label className="text-xs text-zinc-600">Portion</label>
-                    <select
-                      value={it.portion}
-                      onChange={(e) => updatePortion(idx, e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
-                    >
-                      {portionOptions.map((opt) => (
-                        <option value={opt.key} key={opt.key}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button variant="flat" onClick={() => updateQty(idx, -1)}>
@@ -292,12 +250,13 @@ function Cart({ items, setItems, onCheckout }) {
         <div className="text-sm text-zinc-600">Subtotal</div>
         <div className="text-lg font-bold">£{total.toFixed(2)}</div>
       </div>
-      <Button disabled={!items.length} onClick={onCheckout} className="flex items-center justify-center gap-2">
+      <Button
+        disabled={!items.length}
+        onClick={onCheckout}
+        className="flex items-center justify-center gap-2"
+      >
         <CheckCircle2 className="h-5 w-5" /> Checkout
       </Button>
-      <div className="text-xs text-zinc-500 mt-1">
-        Split pricing applied where available.
-      </div>
     </div>
   );
 }
@@ -308,22 +267,30 @@ export default function App() {
     JSON.parse(localStorage.getItem("session") || "null")
   );
   const username = session?.username || null;
-
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [cartItems, setCartItems] = useState([]);
 
-  // Categories derived from data to prevent empty filters
+  // 🔥 Normalize products so each has a guaranteed unique ID
+  const NORMALIZED_PRODUCTS = useMemo(
+    () =>
+      PRODUCTS.map((p, i) => ({
+        ...p,
+        id: p.id || `${p.name?.toLowerCase().replace(/\s+/g, "-")}-${i}`,
+      })),
+    []
+  );
+
   const CATEGORIES = useMemo(() => {
     const set = new Set(
-      PRODUCTS.map((p) => (p.category || "").trim()).filter(Boolean)
+      NORMALIZED_PRODUCTS.map((p) => (p.category || "").trim()).filter(Boolean)
     );
     return ["All", ...Array.from(set).sort()];
-  }, []);
+  }, [NORMALIZED_PRODUCTS]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return PRODUCTS.filter((p) => {
+    return NORMALIZED_PRODUCTS.filter((p) => {
       const cat = (p.category || "").trim();
       const catOk = activeCategory === "All" || cat === activeCategory;
       const qOk =
@@ -331,15 +298,14 @@ export default function App() {
         (p.name || "").toLowerCase().includes(q) ||
         cat.toLowerCase().includes(q) ||
         (p.pack || "").toLowerCase().includes(q) ||
-        (p.size || "").toLowerCase().includes(q) ||
-        (p.id || "").toLowerCase().includes(q);
+        (p.size || "").toLowerCase().includes(q);
       return catOk && qOk;
     });
-  }, [query, activeCategory]);
+  }, [query, activeCategory, NORMALIZED_PRODUCTS]);
 
   const addToCart = (product, portion = "full", isSplit = false) =>
     setCartItems((prev) => {
-      const key = `${product.id}__${portion}`; // unique per product + portion
+      const key = `${product.id}__${portion}`;
       const idx = prev.findIndex((x) => `${x.id}__${x.portion}` === key);
       if (idx >= 0) {
         const copy = [...prev];
@@ -352,8 +318,8 @@ export default function App() {
           ...product,
           portion,
           qty: 1,
-          isSplit,                 // remember if this item supports split
-          basePrice: product.price // keep base price for accurate math
+          isSplit,
+          basePrice: product.price,
         },
       ];
     });
@@ -437,7 +403,7 @@ export default function App() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {filtered.map((p) => (
-              <ProductCard key={`${p.id}`} p={p} onAdd={addToCart} />
+              <ProductCard key={p.id} p={p} onAdd={addToCart} />
             ))}
           </div>
         </section>
