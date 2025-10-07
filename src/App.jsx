@@ -6,9 +6,9 @@ import {
 } from "lucide-react";
 
 /**
- * Grillburger – Next Version (Mobile‑first + Desktop)
+ * Grillburger – Next Version (Mobile-first + Desktop)
  * - Brand header with logo + title
- * - Category chips (Frozen featured), instant filtering
+ * - Category chips, instant filtering
  * - Product details sheet (tap card for more info)
  * - Frequently Bought (learned from order history)
  * - Cart badge in bottom nav, safe-area padding on phones
@@ -17,12 +17,8 @@ import {
 
 import { PRODUCTS } from "./data/PRODUCTS.generated";
 
+// Keep these in sync with your dataset
 const ALL_CATEGORIES = ["All","Fruit","Vegetables","Salads","Herbs","Exotics"];
-// when filtering:
-const filtered = PRODUCTS.filter(p =>
-  (activeCategory === "All" || p.category === activeCategory) &&
-  matchesSearch(p, query)
-);
 
 // ---------- Storage Helpers ----------
 const LS_USERS = "ws_users_v1";
@@ -125,7 +121,7 @@ function ProductCard({ p, onAdd, onInfo }) {
         <div className="min-w-0">
           <h3 className="font-semibold leading-tight">{p.name}</h3>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
-            <Pill>{p.pack}</Pill><Pill className={p.category === "Frozen" ? "bg-indigo-50 text-indigo-700" : ""}>{p.category}</Pill>
+            <Pill>{p.pack}</Pill><Pill>{p.category}</Pill>
           </div>
           <div className="mt-2 text-xs text-zinc-500">ID: {p.id}</div>
         </div>
@@ -264,7 +260,7 @@ function OrdersPanel({ username, onLoadToCart }) {
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold flex items-center gap-2"><History className="h-5 w-5 text-indigo-600"/> Orders</h2>
-        {latest && <Button onClick={() => onLoadToCart(latest.items)} className="flex items-center gap-2"><Repeat className="h-4 w-4"/> Re‑order</Button>}
+        {latest && <Button onClick={() => onLoadToCart(latest.items)} className="flex items-center gap-2"><Repeat className="h-4 w-4"/> Re-order</Button>}
       </div>
       {orders.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">No orders yet. Place your first order from the store.</div>
@@ -291,7 +287,7 @@ function OrdersPanel({ username, onLoadToCart }) {
                 ))}
               </div>
               <div className="flex items-center justify-end gap-2">
-                <Button variant="flat" onClick={() => onLoadToCart(o.items)} className="flex items-center gap-2"><Repeat className="h-4 w-4"/> Re‑order</Button>
+                <Button variant="flat" onClick={() => onLoadToCart(o.items)} className="flex items-center gap-2"><Repeat className="h-4 w-4"/> Re-order</Button>
                 <Button variant="ghost" onClick={() => onLoadToCart(o.items, true)} className="flex items-center gap-2"><Edit3 className="h-4 w-4"/> Modify</Button>
               </div>
             </div>
@@ -308,7 +304,7 @@ export default function App() {
   const [username, setUsername] = useState(() => session?.username || null);
 
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("Frozen"); // Featured first
+  const [activeCategory, setActiveCategory] = useState("All"); // ✅ start with All to avoid empty grid
   const [cartItems, setCartItems] = useState([]);
   const [activeTab, setActiveTab] = useState("store"); // store | orders | account
   const [toast, setToast] = useState(null);
@@ -316,6 +312,17 @@ export default function App() {
   const [detailsFor, setDetailsFor] = useState(null);
 
   useEffect(() => { if (session?.username) setUsername(session.username); }, [session]);
+
+  const matchesSearch = (p, q) => {
+    const s = q.toLowerCase().trim();
+    if (!s) return true;
+    return (
+      p.name.toLowerCase().includes(s) ||
+      p.category.toLowerCase().includes(s) ||
+      String(p.id).toLowerCase().includes(s) ||
+      (p.pack || "").toLowerCase().includes(s)
+    );
+  };
 
   // Learn Frequently Bought from orders
   const frequent = useMemo(() => {
@@ -328,9 +335,11 @@ export default function App() {
   }, [username, activeTab]);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    return PRODUCTS.filter((p) => (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) &&
-      (!activeCategory || p.category === activeCategory));
+    return PRODUCTS.filter((p) => {
+      const inCat = activeCategory === "All" || p.category === activeCategory;
+      const inSearch = matchesSearch(p, query);
+      return inCat && inSearch;
+    });
   }, [query, activeCategory]);
 
   const addToCart = (p) => {
@@ -403,7 +412,7 @@ export default function App() {
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
                   {ALL_CATEGORIES.map(cat => (
                     <button key={cat} onClick={() => setActiveCategory(cat)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm border ${activeCategory === cat ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-zinc-700 border-zinc-300"}`}>
-                      {cat === "Frozen" ? <span className="inline-flex items-center gap-1"><Snowflake className="h-4 w-4"/> {cat}</span> : cat}
+                      {cat}
                     </button>
                   ))}
                 </div>
