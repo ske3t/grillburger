@@ -1,11 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
-  LogOut, Plus, Minus, Trash2, CheckCircle2, Search, User, Lock,
+  ShoppingCart, History, User, LogOut, Plus, Minus, Trash2, CheckCircle2,
+  Search, PackageCheck, ChevronRight
 } from "lucide-react";
 import { PRODUCTS } from "./data/PRODUCTS.generated.js";
 import logo from "./assets/logo.jpg";
 
-// ---------- UI helpers ----------
+/* -------------------------------------------------------
+   Helpers
+------------------------------------------------------- */
 const portionOptions = [
   { key: "full", label: "Full case", factor: 1 },
   { key: "half", label: "Half case", factor: 0.5 },
@@ -25,20 +28,23 @@ const Button = ({ children, variant = "primary", className = "", ...props }) => 
       : "bg-indigo-600 text-white hover:bg-indigo-700";
   return (
     <button
-      className={`rounded-xl px-4 py-3 text-sm font-medium shadow-sm ${base} ${className}`}
+      className={`rounded-xl px-4 py-3 text-sm font-medium shadow-sm transition ${base} ${className}`}
       {...props}
     >
       {children}
     </button>
   );
 };
-const Pill = ({ children }) => (
-  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">
+
+const Pill = ({ children, className = "" }) => (
+  <span className={`rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 ${className}`}>
     {children}
   </span>
 );
 
-// ---------- Auth ----------
+/* -------------------------------------------------------
+   Auth
+------------------------------------------------------- */
 function AuthPanel({ onAuthed }) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
@@ -70,6 +76,7 @@ function AuthPanel({ onAuthed }) {
         <img src={logo} alt="Grillburger" className="h-8 w-8 rounded-md" />
         <h1 className="text-xl font-semibold">Grillburger</h1>
       </div>
+
       <div className="flex overflow-hidden rounded-xl bg-zinc-100 p-1">
         <button
           onClick={() => setMode("login")}
@@ -88,43 +95,41 @@ function AuthPanel({ onAuthed }) {
           Sign up
         </button>
       </div>
+
       <form onSubmit={submit} className="grid gap-4">
         <label className="grid gap-2">
           <span className="text-sm font-medium">Username</span>
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm">
-            <User className="h-4 w-4 text-zinc-400" />
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. finlay"
-              className="w-full outline-none"
-            />
-          </div>
+          <input
+            className="rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm outline-none"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="e.g. finlay"
+          />
         </label>
         <label className="grid gap-2">
           <span className="text-sm font-medium">Password</span>
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm">
-            <Lock className="h-4 w-4 text-zinc-400" />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full outline-none"
-            />
-          </div>
+          <input
+            type="password"
+            className="rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
         </label>
         {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <Button type="submit" className="w-full">
           {mode === "login" ? "Log in" : "Create account"}
         </Button>
       </form>
+
       <p className="text-center text-xs text-zinc-500">Demo only • Data stored in your browser</p>
     </div>
   );
 }
 
-// ---------- Product Card ----------
+/* -------------------------------------------------------
+   Product Card (Split-aware)
+------------------------------------------------------- */
 function ProductCard({ p, onAdd }) {
   const [portion, setPortion] = useState("full");
 
@@ -133,7 +138,7 @@ function ProductCard({ p, onAdd }) {
     String(p.split).toLowerCase() === "y" ||
     String(p.split).toLowerCase() === "yes";
 
-  const priceToShow = (p.price || 0) * portionFactor(portion);
+  const showPrice = (p.price || 0) * portionFactor(portion);
 
   return (
     <div className="group grid rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -147,10 +152,8 @@ function ProductCard({ p, onAdd }) {
             {isSplit && <Pill>Split available</Pill>}
           </div>
         </div>
-        <div className="text-right">
-          <div className="rounded-xl bg-zinc-100 px-2 py-1 text-sm font-semibold">
-            £{priceToShow.toFixed(2)}
-          </div>
+        <div className="rounded-xl bg-zinc-100 px-2 py-1 text-sm font-semibold">
+          £{showPrice.toFixed(2)}
         </div>
       </div>
 
@@ -163,16 +166,14 @@ function ProductCard({ p, onAdd }) {
             className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
           >
             {portionOptions.map((opt) => (
-              <option value={opt.key} key={opt.key}>
-                {opt.label}
-              </option>
+              <option key={opt.key} value={opt.key}>{opt.label}</option>
             ))}
           </select>
         </div>
       )}
 
       <div className="mt-3 flex items-center justify-between">
-        <div className="text-xs text-zinc-500">{p.ProductCode}</div>
+        <div className="text-xs text-zinc-500">Code: {p.ProductCode}</div>
         <Button onClick={() => onAdd(p, portion, isSplit)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Add
         </Button>
@@ -181,7 +182,9 @@ function ProductCard({ p, onAdd }) {
   );
 }
 
-// ---------- Cart ----------
+/* -------------------------------------------------------
+   Cart
+------------------------------------------------------- */
 function Cart({ items, setItems, onCheckout }) {
   const total = items.reduce(
     (s, it) => s + (it.basePrice || it.price) * portionFactor(it.portion) * it.qty,
@@ -192,8 +195,8 @@ function Cart({ items, setItems, onCheckout }) {
     setItems((prev) => {
       const copy = [...prev];
       const it = copy[idx];
-      const nextQty = Math.max(1, it.qty + delta);
-      copy[idx] = { ...it, qty: nextQty };
+      const next = Math.max(1, it.qty + delta);
+      copy[idx] = { ...it, qty: next };
       return copy;
     });
 
@@ -205,6 +208,7 @@ function Cart({ items, setItems, onCheckout }) {
         <h3 className="font-semibold">Your Cart</h3>
         <Pill>{items.length} items</Pill>
       </div>
+
       {items.length === 0 ? (
         <div className="text-sm text-zinc-500">Your cart is empty.</div>
       ) : (
@@ -214,96 +218,180 @@ function Cart({ items, setItems, onCheckout }) {
             return (
               <div
                 key={`${it.id}__${it.portion}`}
-                className="flex flex-col gap-2 rounded-xl border border-zinc-100 p-3"
+                className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 p-3"
               >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{it.name}</div>
-                    <div className="text-xs text-zinc-500">
-                      {it.pack ? `${it.pack} • ` : ""}
-                      {portionLabel(it.portion)}
-                    </div>
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{it.name}</div>
+                  <div className="text-xs text-zinc-500">
+                    {it.pack ? `${it.pack} • ` : ""}{portionLabel(it.portion)}
                   </div>
-                  <div className="w-24 text-right font-semibold">£{line.toFixed(2)}</div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Button variant="flat" onClick={() => updateQty(idx, -1)}>
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <div className="w-8 text-center font-semibold">{it.qty}</div>
-                    <Button variant="flat" onClick={() => updateQty(idx, +1)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button variant="ghost" onClick={() => removeItem(idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="flat" onClick={() => updateQty(idx, -1)}><Minus className="h-4 w-4" /></Button>
+                  <div className="w-8 text-center font-semibold">{it.qty}</div>
+                  <Button variant="flat" onClick={() => updateQty(idx, +1)}><Plus className="h-4 w-4" /></Button>
                 </div>
+
+                <div className="w-24 text-right font-semibold">£{line.toFixed(2)}</div>
+                <Button variant="ghost" onClick={() => removeItem(idx)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             );
           })}
         </div>
       )}
+
       <div className="mt-2 flex items-center justify-between">
         <div className="text-sm text-zinc-600">Subtotal</div>
         <div className="text-lg font-bold">£{total.toFixed(2)}</div>
       </div>
-      <Button
-        disabled={!items.length}
-        onClick={onCheckout}
-        className="flex items-center justify-center gap-2"
-      >
+
+      <Button disabled={!items.length} onClick={onCheckout} className="flex items-center justify-center gap-2">
         <CheckCircle2 className="h-5 w-5" /> Checkout
       </Button>
+      <div className="text-xs text-zinc-500 mt-1">Split pricing applied where available.</div>
     </div>
   );
 }
 
-// ---------- Main ----------
-export default function App() {
-  const [session, setSession] = useState(() =>
-    JSON.parse(localStorage.getItem("session") || "null")
+/* -------------------------------------------------------
+   Orders (simple history)
+------------------------------------------------------- */
+function OrdersPanel({ username }) {
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    const key = "orders_" + username;
+    setOrders(JSON.parse(localStorage.getItem(key) || "[]"));
+  }, [username]);
+
+  if (!orders.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        No orders yet. Place your first order from the store.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {orders.map((o) => (
+        <div key={o.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Pill>#{o.id.slice(-6).toUpperCase()}</Pill>
+              <div className="text-sm text-zinc-600">{new Date(o.createdAt).toLocaleString()}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase text-zinc-500">Total</div>
+              <div className="text-lg font-bold">£{o.total.toFixed(2)}</div>
+            </div>
+          </div>
+          <div className="mt-2 grid gap-1">
+            {o.items.slice(0, 6).map((it, i) => (
+              <div key={i} className="flex items-center justify-between text-sm text-zinc-700">
+                <div className="truncate"><span className="font-medium">{it.qty}×</span> {it.name}</div>
+                <div>£{((it.basePrice || it.price) * portionFactor(it.portion) * it.qty).toFixed(2)}</div>
+              </div>
+            ))}
+            {o.items.length > 6 && (
+              <div className="text-xs text-zinc-500">+{o.items.length - 6} more items…</div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   );
+}
+
+/* -------------------------------------------------------
+   Order Success Screen
+------------------------------------------------------- */
+function OrderSuccess({ order, onBackToStore, onViewOrders }) {
+  if (!order) return null;
+  return (
+    <div className="mx-auto max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm text-center">
+      <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+        <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+      </div>
+      <h2 className="text-xl font-semibold">Order placed!</h2>
+      <p className="mt-1 text-sm text-zinc-600">Thanks — we’ve received your order.</p>
+
+      <div className="mt-4 grid gap-2 rounded-2xl border border-zinc-200 p-3 text-left">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-600">Order #</span>
+          <span className="font-semibold">#{order.id.slice(-6).toUpperCase()}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-600">Placed</span>
+          <span className="font-semibold">{new Date(order.createdAt).toLocaleString()}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-600">Total</span>
+          <span className="text-lg font-bold">£{order.total.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <Button variant="ghost" className="flex-1" onClick={onBackToStore}>Back to store</Button>
+        <Button className="flex-1" onClick={onViewOrders}><History className="h-4 w-4 mr-1 inline" /> View orders</Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------
+   Main App (with mobile bottom nav + cart overlay)
+------------------------------------------------------- */
+export default function App() {
+  // session
+  const [session, setSession] = useState(() => JSON.parse(localStorage.getItem("session") || "null"));
   const username = session?.username || null;
+
+  // app state
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeTab, setActiveTab] = useState("store"); // store | cart | orders | account | success
   const [cartItems, setCartItems] = useState([]);
+  const [lastOrder, setLastOrder] = useState(null);
 
-  // ✅ Use ProductCode as true unique ID
+  // normalize products using ProductCode + Description / SgrpName
   const NORMALIZED_PRODUCTS = useMemo(
     () =>
       PRODUCTS.map((p, i) => ({
         ...p,
-        id: p.ProductCode || `product-${i}`,
+        id: p.ProductCode || `product-${i}`,                   // unique ID
         name: p.Description || p.name || "Unnamed",
+        category: p.category || p.SgrpName || "",              // allow either key
+        price: typeof p.Price1 === "number" ? p.Price1 : Number((p.Price1 || p.price || 0)),
       })),
     []
   );
 
+  // derived categories (mobile chips)
   const CATEGORIES = useMemo(() => {
-    const set = new Set(
-      NORMALIZED_PRODUCTS.map((p) => (p.category || p.SgrpName || "").trim()).filter(Boolean)
-    );
+    const set = new Set(NORMALIZED_PRODUCTS.map((p) => (p.category || "").trim()).filter(Boolean));
     return ["All", ...Array.from(set).sort()];
   }, [NORMALIZED_PRODUCTS]);
 
+  // filtered products
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     return NORMALIZED_PRODUCTS.filter((p) => {
-      const cat = (p.category || p.SgrpName || "").trim();
+      const cat = (p.category || "").trim();
       const catOk = activeCategory === "All" || cat === activeCategory;
       const qOk =
         !q ||
         (p.name || "").toLowerCase().includes(q) ||
         cat.toLowerCase().includes(q) ||
         (p.pack || "").toLowerCase().includes(q) ||
-        (p.size || "").toLowerCase().includes(q);
+        (p.size || "").toLowerCase().includes(q) ||
+        (p.id || "").toLowerCase().includes(q);
       return catOk && qOk;
     });
   }, [query, activeCategory, NORMALIZED_PRODUCTS]);
 
+  // cart ops
   const addToCart = (product, portion = "full", isSplit = false) =>
     setCartItems((prev) => {
       const key = `${product.id}__${portion}`;
@@ -325,25 +413,33 @@ export default function App() {
       ];
     });
 
-  const checkout = () => {
+  const placeOrder = () => {
     if (!username || !cartItems.length) return;
     const total = cartItems.reduce(
       (s, it) => s + (it.basePrice || it.price) * portionFactor(it.portion) * it.qty,
       0
     );
-    const newOrder = {
+    const order = {
       id: Math.random().toString(36).slice(2),
       createdAt: Date.now(),
       items: cartItems,
       total,
     };
     const key = "orders_" + username;
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    localStorage.setItem(key, JSON.stringify([newOrder, ...existing]));
+      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    localStorage.setItem(key, JSON.stringify([order, ...existing]));
     setCartItems([]);
-    alert(`Order placed • £${total.toFixed(2)}`);
+    setLastOrder(order);
+    setActiveTab("success");
   };
 
+  // logout
+  const logout = () => {
+    localStorage.removeItem("session");
+    setSession(null);
+  };
+
+  // unauthenticated
   if (!username) {
     return (
       <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-4 py-10">
@@ -352,67 +448,175 @@ export default function App() {
     );
   }
 
+  // views
+  const StoreView = (
+    <section className="md:col-span-2">
+      <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center gap-2 rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm">
+          <Search className="h-4 w-4 text-zinc-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products…"
+            className="w-full outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm border ${
+                activeCategory === cat
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-zinc-700 border-zinc-300"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <ChevronRight className="h-3 w-3" /> Tip: tap “Add” to send items to your cart. Split options appear on eligible items.
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {filtered.map((p) => (
+          <ProductCard key={`${p.id}`} p={p} onAdd={addToCart} />
+        ))}
+      </div>
+    </section>
+  );
+
+  const CartSidebar = (
+    <aside className="md:col-span-1 hidden md:block">
+      <Cart items={cartItems} setItems={setCartItems} onCheckout={placeOrder} />
+    </aside>
+  );
+
+  const OrdersView = (
+    <section className="md:col-span-2">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm mb-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <History className="h-5 w-5 text-indigo-600" /> Orders
+        </h2>
+      </div>
+      <OrdersPanel username={username} />
+    </section>
+  );
+
+  const AccountView = (
+    <section className="md:col-span-2">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <h2 className="text-lg font-semibold">Account</h2>
+        <div className="mt-2 text-sm text-zinc-600">
+          Username: <span className="font-medium text-zinc-800">{username}</span>
+        </div>
+        <div className="text-sm text-zinc-500">Demo account stored in your browser.</div>
+      </div>
+    </section>
+  );
+
+  const SuccessView = (
+    <section className="md:col-span-2">
+      <OrderSuccess
+        order={lastOrder}
+        onBackToStore={() => setActiveTab("store")}
+        onViewOrders={() => setActiveTab("orders")}
+      />
+    </section>
+  );
+
+  // mobile cart overlay (full screen)
+  const MobileCartOverlay = (
+    <div className={`fixed inset-0 z-50 md:hidden ${activeTab === "cart" ? "" : "pointer-events-none"}`}>
+      <div
+        className={`absolute inset-0 bg-black/30 transition-opacity ${activeTab === "cart" ? "opacity-100" : "opacity-0"}`}
+        onClick={() => setActiveTab("store")}
+      />
+      <div
+        className={`absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl border border-zinc-200 bg-white p-4 shadow-2xl transition-transform ${
+          activeTab === "cart" ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="mx-auto max-w-lg">
+          <Cart items={cartItems} setItems={setCartItems} onCheckout={() => { setActiveTab("store"); placeOrder(); }} />
+        </div>
+      </div>
+    </div>
+  );
+
+  // mobile bottom nav
+  const cartQty = cartItems.reduce((s, it) => s + it.qty, 0);
+  const BottomNav = (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur md:hidden">
+      <div className="mx-auto grid max-w-3xl grid-cols-4 px-2 py-2">
+        <button
+          onClick={() => setActiveTab("store")}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "store" ? "text-indigo-600" : "text-zinc-700"}`}
+        >
+          <ShoppingCart className="h-5 w-5" />
+          Store
+        </button>
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "orders" ? "text-indigo-600" : "text-zinc-700"}`}
+        >
+          <History className="h-5 w-5" />
+          Orders
+        </button>
+        <button
+          onClick={() => setActiveTab("account")}
+          className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "account" ? "text-indigo-600" : "text-zinc-700"}`}
+        >
+          <User className="h-5 w-5" />
+          Account
+        </button>
+        <button
+          onClick={() => setActiveTab("cart")}
+          className={`relative flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-xs ${activeTab === "cart" ? "text-indigo-600" : "text-zinc-700"}`}
+        >
+          <PackageCheck className="h-5 w-5" />
+          Cart
+          {cartQty > 0 && (
+            <span className="absolute -top-1 right-3 rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              {cartQty}
+            </span>
+          )}
+        </button>
+      </div>
+    </nav>
+  );
+
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50">
+    <div className="min-h-dvh bg-gradient-to-br from-indigo-50 via-white to-sky-50 pb-16 md:pb-0">
+      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <img src={logo} alt="Grillburger" className="h-6 w-6 rounded-md" />
             <div className="font-semibold text-lg">Grillburger</div>
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              localStorage.removeItem("session");
-              setSession(null);
-            }}
-            className="flex items-center gap-2"
-          >
+          <Button variant="ghost" onClick={logout} className="hidden md:flex items-center gap-2">
             <LogOut className="h-4 w-4" /> Log out
           </Button>
         </div>
       </header>
 
+      {/* Content */}
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 md:grid-cols-3">
-        <section className="md:col-span-2">
-          <div className="grid gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 rounded-2xl border border-zinc-300 bg-white px-3 py-2 shadow-sm">
-              <Search className="h-4 w-4 text-zinc-400" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search products…"
-                className="w-full outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm border ${
-                    activeCategory === cat
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white text-zinc-700 border-zinc-300"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {filtered.map((p) => (
-              <ProductCard key={`${p.ProductCode}-${p.Description}`} p={p} onAdd={addToCart} />
-            ))}
-          </div>
-        </section>
-
-        <aside className="md:col-span-1">
-          <Cart items={cartItems} setItems={setCartItems} onCheckout={checkout} />
-        </aside>
+        {activeTab === "store" && StoreView}
+        {activeTab === "orders" && OrdersView}
+        {activeTab === "account" && AccountView}
+        {activeTab === "success" && SuccessView}
+        {/* Desktop cart sidebar */}
+        {activeTab !== "success" && CartSidebar}
       </main>
+
+      {/* Mobile cart overlay & bottom nav */}
+      {MobileCartOverlay}
+      {BottomNav}
     </div>
   );
 }
