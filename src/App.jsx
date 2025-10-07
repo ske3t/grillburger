@@ -172,7 +172,7 @@ function ProductCard({ p, onAdd }) {
       )}
 
       <div className="mt-3 flex items-center justify-between">
-        <div className="text-xs text-zinc-500">ID: {p.id}</div>
+        <div className="text-xs text-zinc-500">{p.ProductCode}</div>
         <Button onClick={() => onAdd(p, portion, isSplit)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Add
         </Button>
@@ -271,19 +271,20 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [cartItems, setCartItems] = useState([]);
 
-  // 🔥 Normalize products so each has a guaranteed unique ID
+  // ✅ Use ProductCode as true unique ID
   const NORMALIZED_PRODUCTS = useMemo(
     () =>
       PRODUCTS.map((p, i) => ({
         ...p,
-        id: p.id || `${p.name?.toLowerCase().replace(/\s+/g, "-")}-${i}`,
+        id: p.ProductCode || `product-${i}`,
+        name: p.Description || p.name || "Unnamed",
       })),
     []
   );
 
   const CATEGORIES = useMemo(() => {
     const set = new Set(
-      NORMALIZED_PRODUCTS.map((p) => (p.category || "").trim()).filter(Boolean)
+      NORMALIZED_PRODUCTS.map((p) => (p.category || p.SgrpName || "").trim()).filter(Boolean)
     );
     return ["All", ...Array.from(set).sort()];
   }, [NORMALIZED_PRODUCTS]);
@@ -291,7 +292,7 @@ export default function App() {
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     return NORMALIZED_PRODUCTS.filter((p) => {
-      const cat = (p.category || "").trim();
+      const cat = (p.category || p.SgrpName || "").trim();
       const catOk = activeCategory === "All" || cat === activeCategory;
       const qOk =
         !q ||
@@ -403,7 +404,7 @@ export default function App() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {filtered.map((p) => (
-              <ProductCard key={p.id} p={p} onAdd={addToCart} />
+              <ProductCard key={`${p.ProductCode}-${p.Description}`} p={p} onAdd={addToCart} />
             ))}
           </div>
         </section>
